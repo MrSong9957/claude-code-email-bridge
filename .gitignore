@@ -1,0 +1,43 @@
+# Python 字节码缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# 测试缓存和覆盖率
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+
+# 打包输出
+dist/
+build/
+*.egg-info/
+*.egg
+*.spec.bak
+
+# 运行时生成的文件
+*.log
+*.db.lock
+commands.db
+claude_output.txt
+
+# 环境变量文件（包含敏感信息）
+.env
+
+# IDE 配置（可选，根据团队约定）
+# .vscode/
+# .idea/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Email Bridge</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #FAFAFA;
+            padding: 32px;
+            color: #1F2937;
+            line-height: 1.5;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #6B7280;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3B82F6;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #3B82F6;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #2563EB;
+        }
+
+        .btn-secondary {
+            background: #F3F4F6;
+            color: #6B7280;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #E5E7EB;
+        }
+
+        /* 高级设置折叠菜单 */
+        .collapsible {
+            cursor: pointer;
+            padding: 12px;
+            background: #F9FAFB;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #6B7280;
+            user-select: none;
+        }
+
+        .collapsible:hover {
+            background: #F3F4F6;
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .collapsible-content.active {
+            max-height: 500px;
+            padding-top: 16px;
+        }
+
+        .whitelist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #F9FAFB;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .whitelist-item span {
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .whitelist-item button {
+            padding: 4px 12px;
+            font-size: 12px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .status-running {
+            background: #DEF7EC;
+            color: #059669;
+        }
+
+        .status-stopped {
+            background: #FEF3C7;
+            color: #D97706;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .provider-hint {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-top: 4px;
+        }
+
+        .auto-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #DBEAFE;
+            color: #3B82F6;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .button-group-right {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 快速配置 -->
+    <div class="section">
+        <h2>📧 快速配置</h2>
+
+        <div class="form-group">
+            <label>邮箱账号</label>
+            <input type="email" id="email-account" placeholder="your@qq.com" oninput="detectProvider()">
+            <div class="provider-hint" id="provider-hint"></div>
+        </div>
+
+        <div class="form-group">
+            <label>授权码</label>
+            <input type="password" id="email-password" placeholder="邮箱授权码（非密码）">
+            <div class="provider-hint" id="password-hint">QQ邮箱请在 设置→账户→授权码管理 中生成</div>
+        </div>
+
+        <!-- 高级设置（折叠菜单） -->
+        <div class="collapsible" onclick="toggleAdvanced()">
+            <span>▼ 高级设置</span>
+            <span style="color: #9CA3AF; font-size: 12px;">（通常无需修改）</span>
+        </div>
+
+        <div class="collapsible-content" id="advanced-settings">
+            <div class="form-group">
+                <label>IMAP 服务器 <span class="auto-badge">自动</span></label>
+                <input type="text" id="imap-server" placeholder="imap.qq.com">
+            </div>
+
+            <div class="form-group">
+                <label>IMAP 端口</label>
+                <input type="number" id="imap-port" value="993">
+            </div>
+
+            <div class="form-group">
+                <label>SMTP 服务器 <span class="auto-badge">自动</span></label>
+                <input type="text" id="smtp-server" placeholder="smtp.qq.com">
+            </div>
+
+            <div class="form-group">
+                <label>SMTP 端口</label>
+                <input type="number" id="smtp-port" value="587">
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-secondary" onclick="testConnection()">测试连接</button>
+            <button class="btn-primary" onclick="saveAndStart()">保存并启动</button>
+        </div>
+    </div>
+
+    <!-- 白名单管理 -->
+    <div class="section">
+        <h2>🔒 白名单发件人</h2>
+
+        <div id="whitelist-container">
+            <!-- 动态生成白名单列表 -->
+        </div>
+
+        <div class="button-group-right">
+            <input type="email" id="new-whitelist" placeholder="user@example.com" style="flex: 1;">
+            <button class="btn-primary" onclick="addWhitelist()">添加</button>
+        </div>
+    </div>
+
+    <!-- 服务状态 -->
+    <div class="section">
+        <h2>🚀 服务状态</h2>
+
+        <div class="status-badge status-stopped" id="status-badge">
+            <span class="status-dot"></span>
+            <span id="status-text">已停止</span>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" id="start-btn" onclick="startService()">启动服务</button>
+            <button class="btn-secondary" id="stop-btn" onclick="stopService()" disabled>停止服务</button>
+        </div>
+    </div>
+
+    <script>
+        let currentProvider = null;
+        let whitelist = [];
+
+        // 邮箱服务商识别
+        async function detectProvider() {
+            const email = document.getElementById('email-account').value;
+
+            if (!email.includes('@')) {
+                document.getElementById('provider-hint').textContent = '';
+                return;
+            }
+
+            try {
+                // 调用后端识别服务商
+                const provider = await pywebview.api.detect_email_provider(email);
+                currentProvider = provider;
+
+                // 显示提示
+                const hint = document.getElementById('provider-hint');
+                hint.textContent = `识别为：${provider.name}`;
+                hint.style.color = '#059669';
+
+                // 自动填充高级设置
+                document.getElementById('imap-server').value = provider.imap_server;
+                document.getElementById('imap-port').value = provider.imap_port;
+                document.getElementById('smtp-server').value = provider.smtp_server;
+                document.getElementById('smtp-port').value = provider.smtp_port;
+
+                // 更新授权码提示
+                const passwordHint = document.getElementById('password-hint');
+                if (provider.auth_type === 'auth_code') {
+                    passwordHint.textContent = '请在邮箱设置中生成授权码';
+                } else if (provider.auth_type === 'app_password') {
+                    passwordHint.textContent = '请使用应用专用密码';
+                } else {
+                    passwordHint.textContent = '请使用邮箱密码';
+                }
+            } catch (error) {
+                console.error('识别服务商失败:', error);
+            }
+        }
+
+        // 切换高级设置
+        function toggleAdvanced() {
+            const content = document.getElementById('advanced-settings');
+            const collapsible = document.querySelector('.collapsible span:first-child');
+
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                collapsible.textContent = '▼ 高级设置';
+            } else {
+                content.classList.add('active');
+                collapsible.textContent = '▲ 高级设置';
+            }
+        }
+
+        // 测试连接
+        async function testConnection() {
+            await saveConfig();
+            const result = await pywebview.api.test_connection();
+            if (result.success) {
+                alert('✅ ' + result.message);
+            } else {
+                alert('❌ ' + result.error);
+            }
+        }
+
+        // 保存配置
+        async function saveConfig() {
+            const config = {
+                email_account: document.getElementById('email-account').value,
+                email_password: document.getElementById('email-password').value,
+                whitelist: whitelist
+            };
+
+            const result = await pywebview.api.save_config(config);
+            return result;
+        }
+
+        // 保存并启动
+        async function saveAndStart() {
+            if (!document.getElementById('email-account').value) {
+                alert('请输入邮箱账号');
+                return;
+            }
+            if (!document.getElementById('email-password').value) {
+                alert('请输入授权码');
+                return;
+            }
+
+            await saveConfig();
+            await startService();
+        }
+
+        // 白名单管理
+        function renderWhitelist(list) {
+            whitelist = list;
+            const container = document.getElementById('whitelist-container');
+            container.innerHTML = whitelist.map((email, index) => `
+                <div class="whitelist-item">
+                    <span>${email}</span>
+                    <button class="btn-secondary" onclick="removeWhitelist(${index})">删除</button>
+                </div>
+            `).join('');
+        }
+
+        async function addWhitelist() {
+            const input = document.getElementById('new-whitelist');
+            const email = input.value.trim();
+
+            if (!email) {
+                return;
+            }
+
+            if (!email.includes('@')) {
+                alert('请输入有效的邮箱地址');
+                return;
+            }
+
+            whitelist.push(email);
+            renderWhitelist(whitelist);
+            input.value = '';
+
+            await saveConfig();
+        }
+
+        async function removeWhitelist(index) {
+            whitelist.splice(index, 1);
+            renderWhitelist(whitelist);
+            await saveConfig();
+        }
+
+        // 服务控制
+        async function startService() {
+            const result = await pywebview.api.start_service();
+            if (result.success) {
+                updateStatus(true);
+                alert('✅ ' + result.message);
+            } else {
+                alert('❌ ' + result.error);
+            }
+        }
+
+        async function stopService() {
+            const result = await pywebview.api.stop_service();
+            if (result.success) {
+                updateStatus(false);
+                alert('✅ ' + result.message);
+            } else {
+                alert('❌ ' + result.error);
+            }
+        }
+
+        function updateStatus(running) {
+            const badge = document.getElementById('status-badge');
+            const text = document.getElementById('status-text');
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+
+            if (running) {
+                badge.className = 'status-badge status-running';
+                text.textContent = '运行中';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                badge.className = 'status-badge status-stopped';
+                text.textContent = '已停止';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
+
+        // 加载配置
+        async function loadConfig() {
+            try {
+                const config = await pywebview.api.get_config();
+
+                document.getElementById('email-account').value = config.email_account;
+                document.getElementById('email-password').value = config.email_password;
+
+                // 自动识别并填充
+                if (config.email_account) {
+                    await detectProvider();
+                }
+
+                renderWhitelist(config.whitelist || []);
+            } catch (error) {
+                console.error('加载配置失败:', error);
+            }
+        }
+
+        // 页面加载时执行
+        window.addEventListener('pywebviewready', loadConfig);
+    </script>
+</body>
+</html>

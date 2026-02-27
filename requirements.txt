@@ -1,0 +1,4 @@
+# Claude Email Bridge 依赖清单
+
+# GUI (可选 - 仅 PyWebView GUI 需要)
+pywebview>=4.0
