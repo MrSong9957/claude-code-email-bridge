@@ -7,8 +7,31 @@ Claude Email Bridge - Tkinter GUI 应用
 import sys
 from pathlib import Path
 
+
+def get_resource_path(relative_path):
+    """获取资源文件的绝对路径（兼容 PyInstaller）"""
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstaller 打包后的临时目录
+        return Path(sys._MEIPASS) / relative_path
+    # 开发环境
+    return Path(__file__).parent / relative_path
+
+
+def get_user_data_dir():
+    """获取用户数据目录（用于日志和数据库）"""
+    if sys.platform == 'win32':
+        # Windows: C:\Users\<user>\AppData\Local\Claude Email Bridge\
+        return Path.home() / 'AppData' / 'Local' / 'Claude Email Bridge'
+    elif sys.platform == 'darwin':
+        # macOS: ~/Library/Application Support/Claude Email Bridge/
+        return Path.home() / 'Library' / 'Application Support' / 'Claude Email Bridge'
+    else:
+        # Linux: ~/.local/share/claude-email-bridge/
+        return Path.home() / '.local' / 'share' / 'claude-email-bridge'
+
+
 # 添加项目根目录到 sys.path
-project_root = Path(__file__).parent.parent
+project_root = get_resource_path('..').resolve()
 sys.path.insert(0, str(project_root))
 
 import tkinter as tk

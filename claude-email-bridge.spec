@@ -11,14 +11,28 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        # 如果使用 PyWebView GUI,取消下面的注释
-        # ('gui/index.html', 'gui'),
+        # 包含示例配置文件
+        ('.env.example', '.'),
     ],
     hiddenimports=[
+        # tkinter 相关
         'tkinter',
         'tkinter.ttk',
         'tkinter.messagebox',
         'tkinter.filedialog',
+        # 项目模块
+        'config',
+        'config.settings',
+        'mail',
+        'mail.receiver',
+        'mail.sender',
+        'mail.parser',
+        'queue',
+        'queue.manager',
+        'core',
+        'core.executor',
+        'gui',
+        'gui.mail_providers',
     ],
     hookspath=[],
     hooksconfig={},
